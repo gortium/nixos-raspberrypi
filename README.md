@@ -33,6 +33,46 @@ overlays, containing vendor, and optimized packages, like `libcamera`, `ffmpeg`,
 
 # Usage
 
+
+## Cross-compilation
+
+Build aarch64 NixOS configurations for any Raspberry Pi from an x86_64 host:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixos-raspberrypi.url = "github:gortium/nixos-raspberrypi/cm5-cross-v1";
+  };
+
+  outputs = { nixpkgs, nixos-raspberrypi, ... }: {
+    nixosConfigurations.my-rpi = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        {
+          nixpkgs.buildPlatform = "x86_64-linux";
+          nixpkgs.hostPlatform = "aarch64-linux";
+          services.openssh.enable = true;
+          system.stateVersion = "25.11";
+        }
+        nixos-raspberrypi.nixosModules.nixpkgs-rpi
+        nixos-raspberrypi.nixosModules.raspberry-pi-5.base
+        nixos-raspberrypi.lib.inject-overlays
+        nixos-raspberrypi.lib.inject-overlays-global
+      ];
+    };
+  };
+}
+```
+
+Build with:
+
+```bash
+nix build .#nixosConfigurations.my-rpi.config.system.build.toplevel
+```
+
+Swap `raspberry-pi-5.base` for `raspberry-pi-4.base`, `raspberry-pi-3.base`, or `raspberry-pi-02.base` depending on your board.
+
 ## Adding flake input
 
 ```nix
